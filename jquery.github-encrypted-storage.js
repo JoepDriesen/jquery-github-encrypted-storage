@@ -26,6 +26,7 @@
     // Create the defaults once
     var pluginName = 'githubEncryptedStorage',
         defaults = {
+		  app_name: 'Default',
           encryption_passphrase: null,
         };
 
@@ -99,7 +100,7 @@
             issuePromise.resolve(data.map(function(issue) {
                 return {
                     id: issue.number,
-                    json: self.decrypt(issue.title),
+                    json: self.decrypt(issue.body),
                     labels: issue.labels
                 };
             }));
@@ -137,7 +138,8 @@
                 method: 'POST',
                 headers: { Authorization: this._basic_auth_string },
                 data: JSON.stringify({
-                    title: this.encrypt(json_object),
+					title: this.encrypt(Math.floor((Math.random() * 100) + 1)),
+                    body: this.encrypt(json_object),
                     labels: labels ? labels : [],
                 }),
                 contentType:"application/json"
@@ -148,7 +150,7 @@
                 method: 'PATCH',
                 headers: { Authorization: this._basic_auth_string },
                 data: JSON.stringify({
-                    title: this.encrypt(json_object),
+                    body: this.encrypt(json_object),
                     labels: labels ? labels : [],
                 }),
                 contentType:"application/json"
