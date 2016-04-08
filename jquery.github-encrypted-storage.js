@@ -1,9 +1,14 @@
+/**
+ *
+ *
+**/
 /*!
- * jQuery Github Encrypted Storage
- * Original author: Joep Driesen
- * Further changes, comments: JoepDriesen
- * Licensed under the GNU GPL v3 license
+ * jQuery lightweight plugin boilerplate
+ * Original author: @ajpiano
+ * Further changes, comments: @addyosmani
+ * Licensed under the MIT license
  */
+
 
 // the semi-colon before the function invocation is a safety 
 // net against concatenated scripts and/or other plugins 
@@ -26,7 +31,7 @@
     // Create the defaults once
     var pluginName = 'githubEncryptedStorage',
         defaults = {
-          encryption_passphrase: null,
+            encryption_passphrase: null,
         };
 
     // The actual plugin constructor
@@ -59,9 +64,6 @@
         
         this._github_repos_url = 'https://api.github.com/repos/' + this.options.github_username + '/' + this.options.github_repo;
         this._basic_auth_string = "Basic " + btoa(this.options.github_username + ':' + this.options.github_password)
-        
-        this._labels = null;
-        this._labelsLoaded = false;
     };
     
     Plugin.prototype.decrypt = function (cypher_text) {
@@ -90,7 +92,7 @@
     Plugin.prototype.objects = function (labels_filter) {
         var issuePromise = $.Deferred();
         
-        var self = this;
+        self = this;
         
         $.ajax({
             url: this._github_repos_url + '/issues',
@@ -110,27 +112,21 @@
         return issuePromise.promise();
     };
     
-    Plugin.prototype.loadLabels = function () {
-        this.labelsLoaded = false;
+    Plugin.prototype.labels = function () {
+        var labelsPromise = $.Deferred();
+        
+        self = this;
         
         $.ajax({
             url: this._github_repos_url + '/labels',
             method: 'GET'
         }).success(function(data) {
-            this._labels = data;
-            this._labelsLoaded = true;
+            labelsPromise.resolve(data);
         }).error(function(e) {
-            console.log(e);
-            throw 'Error while connecting to github repo';
+            labelsPromise.reject('Error while contacting Github API', e);
         });
-    };
-    
-    Plugin.prototype.labels = function () {
-        if (!this._labelsLoaded) {
-            throw 'Labels have not been loaded yet!';
-        }
         
-        return this._labels;
+        return labelsPromise.promise();
     };
     
     Plugin.prototype.saveObject = function(json_object, labels, existing_id) {
