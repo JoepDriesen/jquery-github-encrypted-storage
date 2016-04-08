@@ -88,7 +88,7 @@
         return encrypted.toString();
     };
     
-    Plugin.prototype.objects = function (labels_filter) {
+    Plugin.prototype.objects = function (labels_filter, filter_type='and') {
         var issuePromise = $.Deferred();
         
         var self = this;
@@ -96,10 +96,19 @@
         $.ajax({
             url: this._github_repos_url + '/issues',
             data: {
-				labels: labels_filter ? labels_filter.join(',') : [],
+				labels: (labels_filter && filter_type.toLowerCase() === 'and') ? labels_filter.join(',') : [],
 			},
         }).success(function(data) {
-            issuePromise.resolve(data.map(function(issue) {
+            issuePromise.resolve(data.filter(function(issue) {
+				if (filter_type.toLowerCase() !== 'or')
+					return true;
+				for (label_i in issue.labels) {
+					var label = issue.labels[label_i];
+					if (labels_filter.indexOf(label.name) >= 0)
+						return true;
+				}
+				return false;
+			}).map(function(issue) {
                 return {
                     id: issue.number,
                     json: self.decrypt(issue.body),
