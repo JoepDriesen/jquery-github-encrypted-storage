@@ -95,7 +95,9 @@
         
         $.ajax({
             url: this._github_repos_url + '/issues',
-            labels: [],
+            data: {
+				labels: labels_filter ? labels_filter.join(',') : [],
+			},
         }).success(function(data) {
             issuePromise.resolve(data.map(function(issue) {
                 return {
