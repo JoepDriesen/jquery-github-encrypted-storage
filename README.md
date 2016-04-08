@@ -103,6 +103,11 @@ var object = {
 }
 ```
 
+### removeObject(id)
+
+Returns a [jQuery promise](https://api.jquery.com/deferred.promise/) indicating if the object with the given id was
+successfully removed from the Github Issue Tracker
+
 ### saveObject(object, labels, existing_id)
 
 Returns a [jQuery promise](https://api.jquery.com/deferred.promise/) indicating if the object was successfully 
