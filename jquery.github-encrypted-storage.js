@@ -1,14 +1,9 @@
-/**
- *
- *
-**/
 /*!
- * jQuery lightweight plugin boilerplate
- * Original author: @ajpiano
- * Further changes, comments: @addyosmani
- * Licensed under the MIT license
+ * jQuery Github Encrypted Storage
+ * Original author: Joep Driesen
+ * Further changes, comments: JoepDriesen
+ * Licensed under the GNU GPL v3 license
  */
-
 
 // the semi-colon before the function invocation is a safety 
 // net against concatenated scripts and/or other plugins 
@@ -31,7 +26,7 @@
     // Create the defaults once
     var pluginName = 'githubEncryptedStorage',
         defaults = {
-            encryption_passphrase: null,
+          encryption_passphrase: null,
         };
 
     // The actual plugin constructor
@@ -64,6 +59,9 @@
         
         this._github_repos_url = 'https://api.github.com/repos/' + this.options.github_username + '/' + this.options.github_repo;
         this._basic_auth_string = "Basic " + btoa(this.options.github_username + ':' + this.options.github_password)
+        
+        this._labels = null;
+        this._labelsLoaded = false;
     };
     
     Plugin.prototype.decrypt = function (cypher_text) {
@@ -92,7 +90,7 @@
     Plugin.prototype.objects = function (labels_filter) {
         var issuePromise = $.Deferred();
         
-        self = this;
+        var self = this;
         
         $.ajax({
             url: this._github_repos_url + '/issues',
