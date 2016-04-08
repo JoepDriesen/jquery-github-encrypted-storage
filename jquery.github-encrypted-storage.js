@@ -130,6 +130,25 @@
         return labelsPromise.promise();
     };
     
+    Plugin.prototype.removeObject = function(id) {
+        var issuePromise = $.Deferred();
+        
+        $.ajax({
+			url: this._github_repos_url + '/issues/' + id,
+			method: 'PATCH',
+			headers: { Authorization: this._basic_auth_string },
+			data: JSON.stringify({
+				state: 'closed',
+			}),
+		}).success(function(data) {
+            issuePromise.resolve('success');
+        }).error(function(e) {
+            issuePromise.reject('Error while contacting Github API', e);
+        });
+        
+        return issuePromise.promise();
+    };
+    
     Plugin.prototype.saveObject = function(json_object, labels, existing_id) {
         var issuePromise = $.Deferred();
         
