@@ -26,8 +26,8 @@
     // Create the defaults once
     var pluginName = 'githubEncryptedStorage',
         defaults = {
-		  app_name: 'Default',
-          encryption_passphrase: null,
+    		app_name: 'Default',
+    		encryption_passphrase: null,
         };
 
     // The actual plugin constructor
@@ -48,6 +48,8 @@
     }
 
     Plugin.prototype.init = function () {
+    	var self = this;
+    	
         if (!this.options.github_username) {
             throw 'githubEncryptedStorage requires the github_username option';
         }
@@ -60,51 +62,65 @@
         
         this._github_repos_url = 'https://api.github.com/repos/' + this.options.github_username + '/' + this.options.github_repo;
         this._basic_auth_string = "Basic " + btoa(this.options.github_username + ':' + this.options.github_password)
-        
-        this._labels = null;
-        this._labelsLoaded = false;
     };
     
-    Plugin.prototype.decrypt = function (cypher_text) {
+    Plugin.prototype.decrypt = function (cypher_text, is_json=true) {
         var stringified = cypher_text;
         
         if (this.options.encryption_passphrase) {
-            var decrypted = CryptoJS.AES.decrypt(cypher_text, this.options.encryption_passphrase);
+        	var key128Bits = CryptoJS.PBKDF2(this.options.encryption_passphrase, CryptoJS.enc.Hex.parse(this.options.app_name), { keySize: 128/32 });
+            try {
+            	var decrypted = CryptoJS.AES.decrypt(cypher_text, this.options.encryption_passphrase);
+
+                var stringified = decrypted.toString(CryptoJS.enc.Utf8);
+                if (is_json)
+                	return JSON.parse(stringified);
+            } catch (e) {
+            	var decrypted = CryptoJS.AES.decrypt(cypher_text, key128Bits, { iv: CryptoJS.enc.Hex.parse(this.options.app_name) });
+
+                var stringified = decrypted.toString(CryptoJS.enc.Utf8);
+                if (is_json)
+                	return JSON.parse(stringified);
+            }
             
             var stringified = decrypted.toString(CryptoJS.enc.Utf8);
         }
         
-        return JSON.parse(stringified);
+        if (is_json)
+        	return JSON.parse(stringified);
+        return stringified
     };
     
-    Plugin.prototype.encrypt = function (json_object) {
-        var stringified = JSON.stringify(json_object);
+    Plugin.prototype.encrypt = function (to_encrypt, is_json=true) {
+        
+    	var stringified = to_encrypt;
+    	if (is_json)
+    		stringified = JSON.stringify(to_encrypt);
         
         if (!this.options.encryption_passphrase)
             return stringified;
 
-        var encrypted = CryptoJS.AES.encrypt(stringified, this.options.encryption_passphrase);
+    	var key128Bits = CryptoJS.PBKDF2(this.options.encryption_passphrase, CryptoJS.enc.Hex.parse(this.options.app_name), { keySize: 128/32 });
+        var encrypted = CryptoJS.AES.encrypt(stringified, key128Bits, { iv: CryptoJS.enc.Hex.parse(this.options.app_name) });
         
         return encrypted.toString();
     };
     
-    Plugin.prototype.objects = function (labels_filter, filter_type='and') {
+    Plugin.prototype.objects = function (labels_filter) {
         var issuePromise = $.Deferred();
         
         var self = this;
         
         $.ajax({
             url: this._github_repos_url + '/issues',
-            data: {
-				labels: (labels_filter && filter_type.toLowerCase() === 'and') ? labels_filter.join(',') : [],
-			},
         }).success(function(data) {
             issuePromise.resolve(data.filter(function(issue) {
-				if (filter_type.toLowerCase() !== 'or')
+				if (labels_filter.length <= 0)
 					return true;
+				
 				for (label_i in issue.labels) {
-					var label = issue.labels[label_i];
-					if (labels_filter.indexOf(label.name) >= 0)
+					var label = self.decrypt(issue.labels[label_i].name).label;
+					if (labels_filter.indexOf(label) >= 0)
 						return true;
 				}
 				return false;
@@ -112,7 +128,7 @@
                 return {
                     id: issue.number,
                     json: self.decrypt(issue.body),
-                    labels: issue.labels
+                    labels: issue.labels.map(function (l) { l.name = self.decrypt(l.name).label; return l; })
                 };
             }));
         }).error(function(e) {
@@ -131,7 +147,12 @@
             url: this._github_repos_url + '/labels',
             method: 'GET'
         }).success(function(data) {
-            labelsPromise.resolve(data);
+        	labelsPromise.resolve(data.map(function(l) {
+        		return {
+            		name: self.decrypt(l.name).label,
+            		color: l.color
+            	};
+            }));
         }).error(function(e) {
             labelsPromise.reject('Error while contacting Github API', e);
         });
@@ -160,6 +181,15 @@
     
     Plugin.prototype.saveObject = function(json_object, labels, existing_id) {
         var issuePromise = $.Deferred();
+        
+        var self = this;
+        
+        labels = labels.map(function(l) { 
+        	return self.encrypt({
+        		app_name: self.options.app_name,
+        		label: l,
+        	});
+        });
         
         var req;
         if (existing_id === undefined) {
