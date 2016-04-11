@@ -1,70 +1,42 @@
-/*!
- * jQuery Github Encrypted Storage
- * Original author: Joep Driesen
- * Further changes, comments: JoepDriesen
- * Licensed under the GNU GPL v3 license
- */
-
-// the semi-colon before the function invocation is a safety 
-// net against concatenated scripts and/or other plugins 
-// that are not closed properly.
-;(function ( $, window, document, undefined ) {
-    
-    // undefined is used here as the undefined global 
-    // variable in ECMAScript 3 and is mutable (i.e. it can 
-    // be changed by someone else). undefined isn't really 
-    // being passed in so we can ensure that its value is 
-    // truly undefined. In ES5, undefined can no longer be 
-    // modified.
-    
-    // window and document are passed through as local 
-    // variables rather than as globals, because this (slightly) 
-    // quickens the resolution process and can be more 
-    // efficiently minified (especially when both are 
-    // regularly referenced in your plugin).
-
-    // Create the defaults once
-    var pluginName = 'githubEncryptedStorage',
-        defaults = {
-    		app_name: 'Default',
-    		encryption_passphrase: null,
-        };
+;let githubEncryptedStorage = (function ( $, undefined) {
+	
+    let defaults = {
+		app_name: 'Default',
+		encryption_passphrase: null,
+	};
 
     // The actual plugin constructor
-    function Plugin( element, options ) {
-        this.element = element;
-
+    function GithubEncryptedStorage( options ) {
         // jQuery has an extend method that merges the 
         // contents of two or more objects, storing the 
-        // result in the first object. The first object 
-        // is generally empty because we don't want to alter 
-        // the default options for future instances of the plugin
+        // result in the first object.
         this.options = $.extend( {}, defaults, options) ;
         
         this._defaults = defaults;
-        this._name = pluginName;
-        
-        this.init();
+		
+		this.init();
     }
 
-    Plugin.prototype.init = function () {
+    GithubEncryptedStorage.prototype.init = function () {
     	var self = this;
     	
-        if (!this.options.github_username) {
+        if (!self.options.github_username) {
             throw 'githubEncryptedStorage requires the github_username option';
         }
-        if (!this.options.github_password) {
+        if (!self.options.github_password) {
             throw 'githubEncryptedStorage requires the github_password option';
         }
-        if (!this.options.github_repo) {
+        if (!self.options.github_repo) {
             throw 'githubEncryptedStorage requires the github_repo option';
         }
         
-        this._github_repos_url = 'https://api.github.com/repos/' + this.options.github_username + '/' + this.options.github_repo;
-        this._basic_auth_string = "Basic " + btoa(this.options.github_username + ':' + this.options.github_password)
+        self._github_repos_url = 'https://api.github.com/repos/' + this.options.github_username + '/' + this.options.github_repo;
+        self._basic_auth_string = "Basic " + btoa(this.options.github_username + ':' + this.options.github_password);
+		
+		self.milestone = $.when ( self._milestone() );
     };
     
-    Plugin.prototype.decrypt = function (cypher_text, is_json=true) {
+    GithubEncryptedStorage.prototype.decrypt = function (cypher_text, is_json=true) {
         var stringified = cypher_text;
         
         if (this.options.encryption_passphrase) {
@@ -91,7 +63,7 @@
         return stringified
     };
     
-    Plugin.prototype.encrypt = function (to_encrypt, is_json=true) {
+    GithubEncryptedStorage.prototype.encrypt = function (to_encrypt, is_json=true) {
         
     	var stringified = to_encrypt;
     	if (is_json)
@@ -106,61 +78,114 @@
         return encrypted.toString();
     };
     
-    Plugin.prototype.objects = function (labels_filter) {
+    GithubEncryptedStorage.prototype.objects = function (labels_filter) {
         var issuePromise = $.Deferred();
         
         var self = this;
         
-        $.ajax({
-            url: this._github_repos_url + '/issues',
-        }).success(function(data) {
-            issuePromise.resolve(data.filter(function(issue) {
-				if (labels_filter.length <= 0)
-					return true;
-				
-				for (label_i in issue.labels) {
-					var label = self.decrypt(issue.labels[label_i].name).label;
-					if (labels_filter.indexOf(label) >= 0)
+		self.milestone.then(function(milestone) {
+			$.ajax({
+				url: self._github_repos_url + '/issues',
+				method: 'GET',
+				headers: { Authorization: self._basic_auth_string },
+				data: {
+					milestone: milestone.number,
+				},
+			}).success(function(data) {
+				issuePromise.resolve(data.filter(function(issue) {
+					if (labels_filter.length <= 0)
 						return true;
-				}
-				return false;
-			}).map(function(issue) {
-                return {
-                    id: issue.number,
-                    json: self.decrypt(issue.body),
-                    labels: issue.labels.map(function (l) { l.name = self.decrypt(l.name).label; return l; })
-                };
-            }));
-        }).error(function(e) {
-            issuePromise.reject('Error while contacting Github API', e);
-        });
+					
+					for (label_i in issue.labels) {
+						var label = self.decrypt(issue.labels[label_i].name).label;
+						if (labels_filter.indexOf(label) >= 0)
+							return true;
+					}
+					return false;
+				}).map(function(issue) {
+					return {
+						id: issue.number,
+						json: self.decrypt(issue.body),
+						labels: issue.labels.map(function (l) { l.name = self.decrypt(l.name).label; return l; }),
+					};
+				}));
+			}).error(function(e) {
+				issuePromise.reject('Error while contacting Github API', e);
+			});
+		}, function(e) {
+			issuePromise.reject('Error while contacting Github API', e);
+		});
         
         return issuePromise.promise();
     };
     
-    Plugin.prototype.labels = function () {
+    GithubEncryptedStorage.prototype.labels = function () {
         var labelsPromise = $.Deferred();
         
-        self = this;
+        let self = this;
         
         $.ajax({
             url: this._github_repos_url + '/labels',
-            method: 'GET'
+            method: 'GET',
+			headers: { Authorization: this._basic_auth_string },
         }).success(function(data) {
-        	labelsPromise.resolve(data.map(function(l) {
-        		return {
-            		name: self.decrypt(l.name).label,
-            		color: l.color
-            	};
-            }));
+        	labelsPromise.resolve(data.reduce(function(prev, l) {
+				try {
+					prev.push( {
+						name: self.decrypt(l.name).label,
+						color: l.color
+					} );
+				} catch (e) {}
+				
+				return prev;
+            }, []));
         }).error(function(e) {
             labelsPromise.reject('Error while contacting Github API', e);
         });
         
         return labelsPromise.promise();
     };
+	
+	GithubEncryptedStorage.prototype._milestone = function () {
+		let self = this;
+		
+		var milestonePromise = $.Deferred();
+		
+		$.ajax({
+			url: self._github_repos_url + '/milestones',
+			method: 'GET',
+			headers: { Authorization: this._basic_auth_string },
+		}).success(function(data) {
+			milestone = data.filter(function(m) {
+				return m.title === self.encrypt(self.options.app_name, false);
+            });
+			
+			if (milestone.length > 0)
+				milestonePromise.resolve(milestone[0]);
+			
+			else {
+				$.ajax({
+					url: self._github_repos_url + '/milestones',
+					method: 'POST',
+					headers: { Authorization: self._basic_auth_string },
+					data: JSON.stringify({
+						title: self.encrypt(self.options.app_name, false),
+					}),
+					contentType:"application/json"
+				}).success(function(data) {
+					milestonePromise.resolve(milestone);
+				}).error(function(e) {
+					milestonePromise.reject(e);
+				});
+			}
+		}).error(function(e) {
+			milestonePromise.reject(e);
+		});
+		
+		return milestonePromise.promise();
+	};
     
-    Plugin.prototype.removeObject = function(id) {
+    GithubEncryptedStorage.prototype.removeObject = function(id) {
         var issuePromise = $.Deferred();
         
         $.ajax({
@@ -179,7 +204,7 @@
         return issuePromise.promise();
     };
     
-    Plugin.prototype.saveObject = function(json_object, labels, existing_id) {
+    GithubEncryptedStorage.prototype.saveObject = function(json_object, labels, existing_id) {
         var issuePromise = $.Deferred();
         
         var self = this;
@@ -191,50 +216,46 @@
         	});
         });
         
-        var req;
-        if (existing_id === undefined) {
-            req = $.ajax({
-                url: this._github_repos_url + '/issues',
-                method: 'POST',
-                headers: { Authorization: this._basic_auth_string },
-                data: JSON.stringify({
-					title: this.encrypt(Math.floor((Math.random() * 100) + 1)),
-                    body: this.encrypt(json_object),
-                    labels: labels ? labels : [],
-                }),
-                contentType:"application/json"
-            });
-        } else {
-            req = $.ajax({
-                url: this._github_repos_url + '/issues/' + existing_id,
-                method: 'PATCH',
-                headers: { Authorization: this._basic_auth_string },
-                data: JSON.stringify({
-                    body: this.encrypt(json_object),
-                    labels: labels ? labels : [],
-                }),
-                contentType:"application/json"
-            });
-        }
-        
-        req.success(function(data) {
-            issuePromise.resolve('success');
-        }).error(function(e) {
-            issuePromise.reject('Error while contacting Github API', e);
-        });
+		self.milestone.then(function (milestone) {
+			var req;
+			if (existing_id === undefined) {
+				req = $.ajax({
+					url: self._github_repos_url + '/issues',
+					method: 'POST',
+					headers: { Authorization: self._basic_auth_string },
+					data: JSON.stringify({
+						title: self.encrypt(Math.floor((Math.random() * 100) + 1)),
+						body: self.encrypt(json_object),
+						labels: labels ? labels : [],
+						milestone: milestone.number,
+					}),
+					contentType:"application/json"
+				});
+			} else {
+				req = $.ajax({
+					url: self._github_repos_url + '/issues/' + existing_id,
+					method: 'PATCH',
+					headers: { Authorization: self._basic_auth_string },
+					data: JSON.stringify({
+						body: self.encrypt(json_object),
+						labels: labels ? labels : [],
+					}),
+					contentType:"application/json"
+				});
+			}
+			
+			req.success(function(data) {
+				issuePromise.resolve('success');
+			}).error(function(e) {
+				issuePromise.reject('Error while contacting Github API', e);
+			});
+		});
         
         return issuePromise.promise();
     };
-
-    // A really lightweight plugin wrapper around the constructor, 
-    // preventing against multiple instantiations
-    $[pluginName] = function ( options ) {
-        if (!$.data(this, 'plugin_' + pluginName)) {
-            $.data(this, 'plugin_' + pluginName, 
-            new Plugin( this, options ));
-            
-            return $.data(this, 'plugin_' + pluginName);
-        }
+	
+	return function ( options ) {
+        return new GithubEncryptedStorage( options );
     }
-
-})( jQuery, window, document );
+	
+}( jQuery ));
