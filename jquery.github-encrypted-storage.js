@@ -89,7 +89,7 @@
      			data.labels = labels_filter.map( function( l ) { return self.encrypt( {
         			app_name: self.options.app_name,
         			label: l,
-        	} ); } );
+        	} ); } ).join( ',' );
         
 		self.milestone.then(function(milestone) {
 			data.milestone = milestone.number;
