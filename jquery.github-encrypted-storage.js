@@ -78,31 +78,26 @@
         return encrypted.toString();
     };
     
-    GithubEncryptedStorage.prototype.objects = function (labels_filter) {
-        var issuePromise = $.Deferred();
+	GithubEncryptedStorage.prototype.objects = function (labels_filter) {
+        	var issuePromise = $.Deferred();
         
-        var self = this;
+     		var self = this;
+     		
+     		var data = {};
+     		
+     		if ( typeof( labels_filter ) !=== 'undefined' && labels_filter.length > 0 )
+     			data.labels = labels_filter.map( function( l ) { return self.encrypt( l ); } );
         
 		self.milestone.then(function(milestone) {
+			data.milestone = milestone.number;
+			
 			$.ajax({
 				url: self._github_repos_url + '/issues',
 				method: 'GET',
 				headers: { Authorization: self._basic_auth_string },
-				data: {
-					milestone: milestone.number,
-				},
+				data: data,
 			}).success(function(data) {
-				issuePromise.resolve(data.filter(function(issue) {
-					if (labels_filter === undefined || labels_filter.length <= 0)
-						return true;
-					
-					for (label_i in issue.labels) {
-						var label = self.decrypt(issue.labels[label_i].name).label;
-						if (labels_filter.indexOf(label) >= 0)
-							return true;
-					}
-					return false;
-				}).map(function(issue) {
+				issuePromise.resolve(data.map(function(issue) {
 					return {
 						id: issue.number,
 						json: self.decrypt(issue.body),
