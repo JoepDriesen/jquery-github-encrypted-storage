@@ -93,7 +93,7 @@
 				},
 			}).success(function(data) {
 				issuePromise.resolve(data.filter(function(issue) {
-					if (labels_filter.length <= 0)
+					if (labels_filter === undefined || labels_filter.length <= 0)
 						return true;
 					
 					for (label_i in issue.labels) {
