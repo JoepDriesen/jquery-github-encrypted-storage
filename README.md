@@ -3,11 +3,12 @@ A jQuery plugin that uses a Github repository issues tracker to store JSON objec
 
 ## Installation
 
-Include script *after* the jQuery and CryptoJS-AES library:
+Include script *after* the jQuery, CryptoJS-AES and CryptoJS-PBKDF2 libraries:
 
 ```html
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/pbkdf2.js"></script>
 <script src="/path/to/jquery.github-encrypted-storage.js"></script>
 ```
 
@@ -16,7 +17,7 @@ Include script *after* the jQuery and CryptoJS-AES library:
 Create a storage object:
 
 ```javascript
-var gh_storage = $.githubEncryptedStorage({
+var gh_storage = githubEncryptedStorage({
   github_username: 'placeholder',
   github_password: 'secret',
   github_repo: 'issue_repo',
