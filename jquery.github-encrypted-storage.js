@@ -209,12 +209,14 @@
         
         var self = this;
         
-        labels = labels.map(function(l) { 
-        	return self.encrypt({
-        		app_name: self.options.app_name,
-        		label: l,
+        if ( labels ) {
+        	labels = labels.map(function(l) { 
+        		return self.encrypt({
+        			app_name: self.options.app_name,
+        			label: l,
+        		});
         	});
-        });
+        }
         
 		self.milestone.then(function (milestone) {
 			var req;
