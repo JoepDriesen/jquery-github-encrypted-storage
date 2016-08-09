@@ -83,7 +83,9 @@
         
      		var self = this;
      		
-     		var data = {};
+     		var data = {
+     			per_page: 1000,
+     		};
      		
      		if ( typeof( labels_filter ) !== 'undefined' && labels_filter.length > 0 )
      			data.labels = labels_filter.map( function( l ) { return self.encrypt( {
