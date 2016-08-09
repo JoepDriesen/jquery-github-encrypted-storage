@@ -85,7 +85,7 @@
      		
      		var data = {};
      		
-     		if ( typeof( labels_filter ) !=== 'undefined' && labels_filter.length > 0 )
+     		if ( typeof( labels_filter ) !== 'undefined' && labels_filter.length > 0 )
      			data.labels = labels_filter.map( function( l ) { return self.encrypt( l ); } );
         
 		self.milestone.then(function(milestone) {
