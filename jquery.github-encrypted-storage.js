@@ -86,7 +86,10 @@
      		var data = {};
      		
      		if ( typeof( labels_filter ) !== 'undefined' && labels_filter.length > 0 )
-     			data.labels = labels_filter.map( function( l ) { return self.encrypt( l ); } );
+     			data.labels = labels_filter.map( function( l ) { return self.encrypt( {
+        			app_name: self.options.app_name,
+        			label: l,
+        	} ); } );
         
 		self.milestone.then(function(milestone) {
 			data.milestone = milestone.number;
