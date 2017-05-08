@@ -279,6 +279,7 @@
 					data: JSON.stringify({
 						body: self.encrypt(json_object),
 						labels: labels ? labels : [],
+						state: 'open',
 					}),
 					contentType:"application/json"
 				});
