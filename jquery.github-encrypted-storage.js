@@ -78,7 +78,7 @@
         return encrypted.toString();
     };
     
-	GithubEncryptedStorage.prototype.objects = function (labels_filter) {
+    GithubEncryptedStorage.prototype.objects = function (labels_filter, state) {
         
         var issuePromise = $.Deferred();
 
@@ -87,6 +87,9 @@
         var data = {
             per_page: 100,
         };
+	    
+	if ( state !== undefined )
+	    data.state = state;
 
         if ( typeof( labels_filter ) !== 'undefined' && labels_filter.length > 0 )
             data.labels = labels_filter.map( function( l ) { return self.encrypt( {
