@@ -116,7 +116,7 @@
                         all.push( {
                             id: issue.number,
                             json: self.decrypt(issue.body),
-                            labels: issue.labels.map(function (l) { l.name = self.decrypt(l.name, false).label; return l; }),
+                            labels: issue.labels.map(function (l) { l.name = self.decrypt(l.name).label; return l; }),
                         } );
                         return all
                     }, all_objects );
@@ -170,7 +170,7 @@
         	labelsPromise.resolve(data.reduce(function(prev, l) {
 				try {
 					prev.push( {
-						name: self.decrypt(l.name, false).label,
+						name: self.decrypt(l.name).label,
 						color: l.color
 					} );
 				} catch (e) {}
