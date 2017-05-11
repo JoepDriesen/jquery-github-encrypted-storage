@@ -55,7 +55,9 @@
                 	return JSON.parse(stringified);
             }
             
-            var stringified = decrypted.toString(CryptoJS.enc.Utf8);
+            stringified = decrypted.toString(CryptoJS.enc.Utf8);
+        } else {
+            stringified = window.atob( stringified );
         }
         
         if (is_json)
@@ -70,12 +72,13 @@
     		stringified = JSON.stringify(to_encrypt);
         
         if (!this.options.encryption_passphrase)
-            return stringified;
+            return window.btoa( stringified );
 
     	var key128Bits = CryptoJS.PBKDF2(this.options.encryption_passphrase, CryptoJS.enc.Hex.parse(this.options.app_name), { keySize: 128/32 });
         var encrypted = CryptoJS.AES.encrypt(stringified, key128Bits, { iv: CryptoJS.enc.Hex.parse(this.options.app_name) });
         
         return encrypted.toString();
+        
     };
     
     GithubEncryptedStorage.prototype.objects = function (labels_filter, state) {
@@ -92,10 +95,12 @@
 	    data.state = state;
 
         if ( typeof( labels_filter ) !== 'undefined' && labels_filter.length > 0 )
-            data.labels = labels_filter.map( function( l ) { return self.encrypt( {
-                app_name: self.options.app_name,
-                label: l,
-        } ); } ).join( ',' );
+            data.labels = labels_filter.map( function( l ) { 
+                return self.encrypt( {
+                    app_name: self.options.app_name,
+                    label: l,
+                } ); 
+            } ).join( ',' );
         
         var all_objects = [];
         
@@ -109,6 +114,7 @@
                     url: self._github_repos_url + '/issues',
                     method: 'GET',
                     headers: { Authorization: self._basic_auth_string },
+					contentType: "application/json",
                     data: data,
                     success: function(issues,textStatus, req) {
                     
@@ -198,7 +204,7 @@
 			method: 'GET',
 			headers: { Authorization: this._basic_auth_string },
 		    success: function(data) {
-                milestone = data.filter(function(m) {
+                var milestone = data.filter(function(m) {
                     return m.title === self.encrypt(self.options.app_name, false);
                 });
 
@@ -258,7 +264,7 @@
         var self = this;
         
         if ( labels ) {
-        	labels = labels.map(function(l) { 
+        	labels = labels.map(function(l) {
         		return self.encrypt({
         			app_name: self.options.app_name,
         			label: l,
@@ -278,14 +284,14 @@
 						body: self.encrypt(json_object),
 						labels: labels ? labels : [],
 						milestone: milestone.number,
-                        success: function(data) {
-                            issuePromise.resolve('success');
-                        },
-                        error: function(e) {
-                            issuePromise.reject('Error while contacting Github API', e);
-                        },
 					}),
-					contentType:"application/json"
+					contentType:"application/json",
+                    success: function(data) {
+                        issuePromise.resolve('success');
+                    },
+                    error: function(e) {
+                        issuePromise.reject('Error while contacting Github API', e);
+                    },
 				});
 			} else {
 				req = $.ajax({
