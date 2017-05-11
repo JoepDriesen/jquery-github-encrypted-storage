@@ -110,40 +110,42 @@
                     method: 'GET',
                     headers: { Authorization: self._basic_auth_string },
                     data: data,
-                }).success(function(issues,textStatus, req) {
+                    success: function(issues,textStatus, req) {
                     
-                    issues.reduce( function( all, issue ) {
-                        all.push( {
-                            id: issue.number,
-                            json: self.decrypt(issue.body),
-                            labels: issue.labels.map(function (l) { l.name = self.decrypt(l.name).label; return l; }),
-                        } );
-                        return all
-                    }, all_objects );
-                    
-                    var link = req.getResponseHeader('Link');
-                    
-                    if ( link ) {
-                        
-                        var next_link = link.split( ', ' ).filter( function( link ) {
-                            return link.includes( 'rel="next"' );
-                        } );
-                        
-                        // No more pages
-                        if ( next_link.length <= 0 )
-                            return issuePromise.resolve( all_objects );
-                        
-                        var page_regex = /[^_]page=(\d+)/g,
-                            next_page = page_regex.exec( next_link )[1];
-                        
-                        return get_next_objects_page( next_page );
-                        
-                    }
+                        issues.reduce( function( all, issue ) {
+                            all.push( {
+                                id: issue.number,
+                                json: self.decrypt(issue.body),
+                                labels: issue.labels.map(function (l) { l.name = self.decrypt(l.name).label; return l; }),
+                            } );
+                            return all
+                        }, all_objects );
 
-                    return issuePromise.resolve( all_objects );
-                    
-                }).error(function(e) {
-                    issuePromise.reject('Error while contacting Github API', e);
+                        var link = req.getResponseHeader('Link');
+
+                        if ( link ) {
+
+                            var next_link = link.split( ', ' ).filter( function( link ) {
+                                return link.includes( 'rel="next"' );
+                            } );
+
+                            // No more pages
+                            if ( next_link.length <= 0 )
+                                return issuePromise.resolve( all_objects );
+
+                            var page_regex = /[^_]page=(\d+)/g,
+                                next_page = page_regex.exec( next_link )[1];
+
+                            return get_next_objects_page( next_page );
+
+                        }
+
+                        return issuePromise.resolve( all_objects );
+
+                    },
+                    error: function(e) {
+                        issuePromise.reject('Error while contacting Github API', e);
+                    },
                 });
 
             }, function(e) {
@@ -166,19 +168,21 @@
             url: this._github_repos_url + '/labels',
             method: 'GET',
 			headers: { Authorization: this._basic_auth_string },
-        }).success(function(data) {
-        	labelsPromise.resolve(data.reduce(function(prev, l) {
-				try {
-					prev.push( {
-						name: self.decrypt(l.name).label,
-						color: l.color
-					} );
-				} catch (e) {}
-				
-				return prev;
-            }, []));
-        }).error(function(e) {
-            labelsPromise.reject('Error while contacting Github API', e);
+            success: function(data) {
+                labelsPromise.resolve(data.reduce(function(prev, l) {
+                    try {
+                        prev.push( {
+                            name: self.decrypt(l.name).label,
+                            color: l.color
+                        } );
+                    } catch (e) {}
+
+                    return prev;
+                }, []));
+            },
+            error: function(e) {
+                labelsPromise.reject('Error while contacting Github API', e);
+            },
         });
         
         return labelsPromise.promise();
@@ -193,32 +197,36 @@
 			url: self._github_repos_url + '/milestones',
 			method: 'GET',
 			headers: { Authorization: this._basic_auth_string },
-		}).success(function(data) {
-			milestone = data.filter(function(m) {
-				return m.title === self.encrypt(self.options.app_name, false);
-            });
-			
-			if (milestone.length > 0)
-				milestonePromise.resolve(milestone[0]);
-			
-			else {
-				$.ajax({
-					url: self._github_repos_url + '/milestones',
-					method: 'POST',
-					headers: { Authorization: self._basic_auth_string },
-					data: JSON.stringify({
-						title: self.encrypt(self.options.app_name, false),
-					}),
-					contentType:"application/json"
-				}).success(function(data) {
-					milestonePromise.resolve(milestone);
-				}).error(function(e) {
-					milestonePromise.reject(e);
-				});
-			}
-		}).error(function(e) {
-			milestonePromise.reject(e);
-		});
+		    success: function(data) {
+                milestone = data.filter(function(m) {
+                    return m.title === self.encrypt(self.options.app_name, false);
+                });
+
+                if (milestone.length > 0)
+                    milestonePromise.resolve(milestone[0]);
+
+                else {
+                    $.ajax({
+                        url: self._github_repos_url + '/milestones',
+                        method: 'POST',
+                        headers: { Authorization: self._basic_auth_string },
+                        data: JSON.stringify({
+                            title: self.encrypt(self.options.app_name, false),
+                        }),
+                        contentType:"application/json",
+                        success: function(data) {
+                            milestonePromise.resolve(milestone);
+                        },
+                        error: function(e) {
+                            milestonePromise.reject(e);
+                        },
+                    });
+                }
+		    },
+            error: function(e) {
+                milestonePromise.reject(e);
+            },
+        });
 		
 		return milestonePromise.promise();
 	};
@@ -233,10 +241,12 @@
 			data: JSON.stringify({
 				state: 'closed',
 			}),
-		}).success(function(data) {
-            issuePromise.resolve('success');
-        }).error(function(e) {
-            issuePromise.reject('Error while contacting Github API', e);
+		    success: function(data) {
+                issuePromise.resolve('success');
+            },
+            error: function(e) {
+                issuePromise.reject('Error while contacting Github API', e);
+            },
         });
         
         return issuePromise.promise();
@@ -268,6 +278,12 @@
 						body: self.encrypt(json_object),
 						labels: labels ? labels : [],
 						milestone: milestone.number,
+                        success: function(data) {
+                            issuePromise.resolve('success');
+                        },
+                        error: function(e) {
+                            issuePromise.reject('Error while contacting Github API', e);
+                        },
 					}),
 					contentType:"application/json"
 				});
@@ -281,15 +297,15 @@
 						labels: labels ? labels : [],
 						state: 'open',
 					}),
-					contentType:"application/json"
+					contentType:"application/json",
+                    success: function(data) {
+                        issuePromise.resolve('success');
+                    },
+                    error: function(e) {
+                        issuePromise.reject('Error while contacting Github API', e);
+                    },
 				});
 			}
-			
-			req.success(function(data) {
-				issuePromise.resolve('success');
-			}).error(function(e) {
-				issuePromise.reject('Error while contacting Github API', e);
-			});
 		});
         
         return issuePromise.promise();
