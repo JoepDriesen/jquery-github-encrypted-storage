@@ -221,7 +221,7 @@
                         }),
                         contentType:"application/json",
                         success: function(data) {
-                            milestonePromise.resolve(milestone);
+                            milestonePromise.resolve(data);
                         },
                         error: function(e) {
                             milestonePromise.reject(e);
