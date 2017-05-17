@@ -308,7 +308,7 @@ describe( "Collection", function() {
             self.ajax_spy.and.callFake( options => {
                 if ( options.url.endsWith( '/issues' ) ) {
                     expect( options.data.labels ).toEqual( JSON.stringify( {
-                        app_name: 'testdb',
+                        db_name: 'testdb',
                         label: 'testcollection',
                     } ) );
                     return options.success( [ 
@@ -415,7 +415,7 @@ describe( "Collection", function() {
             self.db.getCollection( 'testcollection' ).insert( {
                 testkey: 'testvalue',
             } ).then( function( new_docs ) {
-                console.log(new_docs)
+                
                 expect( new_docs.length ).toEqual( 1 );
                 expect( new_docs[0].testkey ).toEqual( 'testvalue' );
 
@@ -485,6 +485,7 @@ describe( "Collection", function() {
 	    
             var remove_call = jasmine.createSpy( 'remove_call' );
             remove_call.and.callFake( options => {
+                expect( JSON.parse( options.data ).state ).toEqual( 'closed' );
                 return options.success( null, null, null );
             } );
             self.ajax_spy.and.callFake( options => {
@@ -519,6 +520,7 @@ describe( "Collection", function() {
 	    
             var update_call = jasmine.createSpy( 'update_call' );
             update_call.and.callFake( options => {
+                expect( JSON.parse( options.data ).state ).toEqual( 'open' );
                 return options.success( JSON.parse( options.data ), null, null );
             } );
             self.ajax_spy.and.callFake( options => {
