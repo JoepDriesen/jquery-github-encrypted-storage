@@ -216,10 +216,10 @@
                             data: JSON.stringify( {
                                 title: self.ges.params.encrypt( String( Math.floor((Math.random() * 100) + 1) ) ),
                                 body: self.ges.params.encrypt( JSON.stringify( doc ) ),
-                                labels: self.ges.params.encrypt( JSON.stringify( {
+                                labels: [ self.ges.params.encrypt( JSON.stringify( {
                                     db_name: self.ges.params.db_name,
                                     label: self.name,
-                                } ) ),
+                                } ) ) ],
                                 milestone: milestone.number,
                             } ),
                             contentType:"application/json",
