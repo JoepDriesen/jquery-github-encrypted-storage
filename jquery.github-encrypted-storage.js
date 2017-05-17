@@ -62,7 +62,11 @@
                     headers: self._headers,
                     success: function( data ) {
 
-                        var milestone = data.filter( m => m.title === self.params.encrypt( self.params.db_name ) );
+                        var milestone = data.filter( m => {
+                            var decrypted = self.params.decrypt( m.title );
+                            
+                            return decrypted === self.params.db_name
+                        } );
                         
                         if (milestone.length > 0)
                             return resolve( milestone[0] );
@@ -210,7 +214,7 @@
                             method: 'POST',
                             headers: self.ges._headers,
                             data: JSON.stringify( {
-                                title: self.ges.params.encrypt( Math.floor((Math.random() * 100) + 1) ),
+                                title: self.ges.params.encrypt( String( Math.floor((Math.random() * 100) + 1) ) ),
                                 body: self.ges.params.encrypt( JSON.stringify( doc ) ),
                                 labels: self.ges.params.encrypt( JSON.stringify( {
                                     db_name: self.ges.params.db_name,
