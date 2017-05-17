@@ -1,5 +1,8 @@
 ( function ( $ ) {
     
+    // Remove caching
+    $.ajaxSetup( { cache: false } )
+    
     var GES = function( username, password, params ) {
         
         var self = this;
@@ -135,7 +138,7 @@
         
     };
     
-    Collection.prototype.find = function() {
+    Collection.prototype.find = function( old_labels=false ) {
         
         var self = this;
         
@@ -147,7 +150,7 @@
 
                 var get_issues = function( next_page ) {
 
-                   return _get_issues_page( self, milestone, next_page ).then( function( response ) {
+                   return _get_issues_page( self, milestone, next_page, old_labels ).then( function( response ) {
                        
                        response.issues.reduce( function( all_docs, issue ) {
                            
@@ -302,7 +305,7 @@
     
     
     
-    var _get_issues_page = function( collection, milestone, page ) {
+    var _get_issues_page = function( collection, milestone, page, old_labels=false ) {
         
         var self = collection;
 
@@ -310,11 +313,18 @@
             milestone: milestone.number,
             per_page: 100,
             page: page,
-            labels: self.ges.params.encrypt( JSON.stringify( {
+        };
+        
+        if ( old_labels )
+            data.labels = self.ges.params.encrypt( JSON.stringify( {
                 app_name: self.ges.params.db_name,
                 label: collection.name,
-            } ) ),
-        };
+            } ) );
+        else
+            data.labels = self.ges.params.encrypt( JSON.stringify( {
+                db_name: self.ges.params.db_name,
+                label: collection.name,
+            } ) );
 
         return new Promise( ( resolve, reject ) => {
 
