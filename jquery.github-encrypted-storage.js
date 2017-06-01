@@ -333,7 +333,7 @@
                         if ( !old_labels )
                             return resolve( { issues: issues, status: status, req: req } );
                         
-                        data.labels += ' ' + self.ges.params.encrypt( JSON.stringify( {
+                        data.labels += self.ges.params.encrypt( JSON.stringify( {
                             app_name: self.ges.params.db_name,
                             label: collection.name,
                         } ) );
@@ -344,9 +344,9 @@
                             headers: self.ges._headers,
                             contentType: "application/json",
                             data: data,
-                            success: ( old_issues, status, req ) => {
+                            success: ( old_label_issues, status, req ) => {
 
-                                issues.push.apply( issues, old_issues );
+                                issues.push.apply( issues, old_label_issues );
                                 
                                 return resolve( { issues: issues, status: status, req: req } );
                                 
