@@ -321,7 +321,7 @@
             } ) );
         
         if ( old_labels )
-            data.labels += ',' + self.ges.params.encrypt( JSON.stringify( {
+            data.labels += ' ' + self.ges.params.encrypt( JSON.stringify( {
                 app_name: self.ges.params.db_name,
                 label: collection.name,
             } ) );
