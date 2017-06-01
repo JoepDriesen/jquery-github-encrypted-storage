@@ -333,7 +333,7 @@
                         if ( !old_labels )
                             return resolve( { issues: issues, status: status, req: req } );
                         
-                        data.labels += self.ges.params.encrypt( JSON.stringify( {
+                        data.labels = self.ges.params.encrypt( JSON.stringify( {
                             app_name: self.ges.params.db_name,
                             label: collection.name,
                         } ) );
