@@ -315,16 +315,17 @@
             page: page,
         };
         
-        if ( old_labels )
-            data.labels = self.ges.params.encrypt( JSON.stringify( {
-                app_name: self.ges.params.db_name,
-                label: collection.name,
-            } ) );
-        else
-            data.labels = self.ges.params.encrypt( JSON.stringify( {
+        data.labels = self.ges.params.encrypt( JSON.stringify( {
                 db_name: self.ges.params.db_name,
                 label: collection.name,
             } ) );
+        
+        if ( old_labels )
+            data.labels += ',' + self.ges.params.encrypt( JSON.stringify( {
+                app_name: self.ges.params.db_name,
+                label: collection.name,
+            } ) );
+            
 
         return new Promise( ( resolve, reject ) => {
 
