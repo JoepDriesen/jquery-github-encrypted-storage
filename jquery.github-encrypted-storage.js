@@ -319,13 +319,6 @@
                 db_name: self.ges.params.db_name,
                 label: collection.name,
             } ) );
-        
-        if ( old_labels )
-            data.labels += ' ' + self.ges.params.encrypt( JSON.stringify( {
-                app_name: self.ges.params.db_name,
-                label: collection.name,
-            } ) );
-            
 
         return new Promise( ( resolve, reject ) => {
 
@@ -335,7 +328,33 @@
                     headers: self.ges._headers,
                     contentType: "application/json",
                     data: data,
-                    success: ( issues, status, req ) => resolve( { issues: issues, status: status, req: req } ),
+                    success: ( issues, status, req ) => {
+                    
+                        if ( !old_labels )
+                            return resolve( { issues: issues, status: status, req: req } );
+                        
+                        data.labels += ' ' + self.ges.params.encrypt( JSON.stringify( {
+                            app_name: self.ges.params.db_name,
+                            label: collection.name,
+                        } ) );
+                        
+                        $.ajax( {
+                            url: self.ges._github_repos_url + '/issues',
+                            method: 'GET',
+                            headers: self.ges._headers,
+                            contentType: "application/json",
+                            data: data,
+                            success: ( old_issues, status, req ) => {
+
+                                issues.push.apply( issues, old_issues );
+                                
+                                return resolve( { issues: issues, status: status, req: req } );
+                                
+                            },
+                            error: reject,
+                        } );    
+                        
+                    },
                     error: reject,
                 } );
 
